@@ -1,0 +1,33 @@
+# Dependendiendo de la arquitectura del host donde se va a correr docker y sus contenedores, así mismo se deberá de buscar la compatibilidad
+# En mi caso, estoy en una arquitectura arm64 que corresponde a los chips M1 de Apple. Por lo tanto, la imagen a utilizar puede ser arm64v8/alpine:3.17
+FROM arm64v8/alpine:3.17
+
+# Se expone puerto por defecto ssh para que sea accesible si se encuentra en la misma red o si se mapea con puerto
+# ssh del host donde se ejecuta la imagen.
+EXPOSE 22
+
+# Instalación del servidor ssh, de bash (opcional) y generación de llave SSH del usuario actual (root) para que el servidor ssh
+# pueda iniciar.
+RUN apk update && apk add --no-cache openssh bash && \
+    ssh-keygen -A
+
+# Se crea el nuevo usuario y se asigna password.
+RUN adduser -s /bin/bash -D sshuser && echo "sshuser:sshuser" | chpasswd
+
+# Se instala sudo para poder dar permisos de administrador a un nuevo usuario y tenga la capacidad de iniciar el servidor ssh y
+# se añade al nuevo usuario en el archivo sudoers para que no necesite contraseña para ejecutar comandos y también para que pueda 
+# ejecutar comandos como superusuario.
+RUN apk add --no-cache sudo && \
+    echo "sshuser ALL=(ALL:ALL) NOPASSWD: ALL" > /etc/sudoers
+
+# Configurar que se permita acceso con un usuario diferente de root y utilizando unicamente contraseña.
+RUN echo "PermitRootLogin no" > /etc/ssh/sshd_config && \
+    echo "PasswordAuthentication yes" >> /etc/ssh/sshd_config && \
+    echo "AllowUsers sshuser"
+
+# Se cambia el usuario para que la ejecución del servidor ssh sea el nuevo usuario.
+USER sshuser
+
+# Inicio del servidor ssh en background y quede como proceso principal del contenedor.
+CMD [ "/usr/sbin/sshd", "-D" ]
+ENTRYPOINT [ "sudo" ]

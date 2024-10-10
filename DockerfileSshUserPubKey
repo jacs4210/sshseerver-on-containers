@@ -30,7 +30,7 @@ RUN apk add --no-cache sudo && \
 RUN echo "PermitRootLogin no" > /etc/ssh/sshd_config && \
     echo "PasswordAuthentication no" >> /etc/ssh/sshd_config && \
     echo "PubkeyAuthentication yes" >> /etc/ssh/sshd_config && \
-    echo "AllowUsers sshuser"
+    echo "AllowUsers sshuser" >> /etc/ssh/sshd_config
 
 # Se cambia el usuario para que la ejecución del servidor ssh sea el nuevo usuario.
 USER sshuser
